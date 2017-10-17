@@ -1,0 +1,22 @@
+PODS:
+  - Flutter (1.0.0)
+  - flutter_blue (0.0.1):
+    - Flutter
+
+DEPENDENCIES:
+  - Flutter (from `/Users/akash/code/flutter/bin/cache/artifacts/engine/ios`)
+  - flutter_blue (from `/Users/akash/.pub-cache/hosted/pub.dartlang.org/flutter_blue-0.2.2/ios`)
+
+EXTERNAL SOURCES:
+  Flutter:
+    :path: /Users/akash/code/flutter/bin/cache/artifacts/engine/ios
+  flutter_blue:
+    :path: /Users/akash/.pub-cache/hosted/pub.dartlang.org/flutter_blue-0.2.2/ios
+
+SPEC CHECKSUMS:
+  Flutter: d674e78c937094a75ac71dd77e921e840bea3dbf
+  flutter_blue: c37a818d0e646d7105e072e1f6dcb0a9de0954a9
+
+PODFILE CHECKSUM: cc70c01bca487bebd110b87397f017f3b76a89f1
+
+COCOAPODS: 1.3.1
