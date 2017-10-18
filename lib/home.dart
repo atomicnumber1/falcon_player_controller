@@ -23,6 +23,7 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = new GlobalKey<ScaffoldState>();
   String dropdownvalue = 'audio';
   List<String> playlists = <String>['audio', 'video'];
 
@@ -38,22 +39,22 @@ class _MyHomePageState extends State<MyHomePage> {
     return JSON.decode(response.body);
   }
 
-  Future<bool> confirmAction(BuildContext context, String action) async {
+  Future<bool> confirmAction(String action) async {
     return showDialog<bool>(
-      context: context,
+      context: _scaffoldKey.currentContext,
       child: new AlertDialog(
         content: new Text('Are you sure you want to $action?'),
         actions: <Widget>[
           new FlatButton(
             child: const Text('No'),
             onPressed: () {
-              Navigator.of(context).pop(false);
+              Navigator.of(_scaffoldKey.currentContext).pop(false);
             },
           ),
           new FlatButton(
             child: new Text('Yes'),
             onPressed: () {
-              Navigator.of(context).pop(true);
+              Navigator.of(_scaffoldKey.currentContext).pop(true);
             },
           ),
         ],
@@ -61,15 +62,15 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  void _notify(BuildContext context, String text, {int timeout: 3}) {
-    Scaffold.of(context).removeCurrentSnackBar();
-    Scaffold.of(context).showSnackBar(new SnackBar(
-          content: new Text(text),
-          duration: new Duration(seconds:timeout),
+  void showInSnackBar(String value, {int timeout: 3}) {
+    _scaffoldKey.currentState.removeCurrentSnackBar();
+    _scaffoldKey.currentState.showSnackBar(new SnackBar(
+        content: new Text(value),
+        duration: new Duration(seconds: timeout),
     ));
   }
 
-  void _handleButton(BuildContext context, ButtonActions action) {
+  void _handleButton(ButtonActions action) {
     Socket.connect(HOST, PORT, timeout: timeout).then((socket) {
       socket.close();
 
@@ -77,38 +78,38 @@ class _MyHomePageState extends State<MyHomePage> {
         case ButtonActions.play:
           runAction('play', dropdownvalue).then((var data) {
             if (data['status'] == 0)
-              _notify(context, 'Playing Playlist $dropdownvalue...');
+              showInSnackBar('Playing Playlist $dropdownvalue...');
             else
-              _notify(context, '[!] [${data['status']} ${data['msg']}');
+              showInSnackBar('[!] [${data['status']} ${data['msg']}');
           });
           break;
         case ButtonActions.stop:
           runAction('stop', dropdownvalue).then((var data) {
             if (data['status'] == 0)
-              _notify(context, 'Stoping Playlist $dropdownvalue...');
+              showInSnackBar('Stoping Playlist $dropdownvalue...');
             else
-              _notify(context, '[!] [${data['status']} ${data['msg']}');
+              showInSnackBar('[!] [${data['status']} ${data['msg']}');
           });
           break;
         case ButtonActions.reboot:
-          confirmAction(context, 'reboot').then((val) {
-            if (val)
+          confirmAction('reboot').then((val) {
+            if (val != null && val == true)
               runAction('reboot').then((var data) {
                 if (data['status'] == 0)
-                  _notify(context, 'Rebooting PI in 10 secs...');
+                  showInSnackBar('Rebooting PI in 10 secs...');
                 else
-                  _notify(context, '[!] [${data['status']} ${data['msg']}');
+                  showInSnackBar('[!] [${data['status']} ${data['msg']}');
               });
           });
           break;
         case ButtonActions.shutdown:
-          confirmAction(context, 'shutdown').then((val) {
-            if (val)
+          confirmAction('shutdown').then((val) {
+            if (val != null && val == true)
               runAction('shutdown').then((var data) {
                 if (data['status'] == 0)
-                  _notify(context, 'Shuting Down PI in 10 secs...');
+                  showInSnackBar('Shuting Down PI in 10 secs...');
                 else
-                  _notify(context, '[!] [${data['status']} ${data['msg']}');
+                  showInSnackBar('[!] [${data['status']} ${data['msg']}');
               });
           });
           break;
@@ -119,76 +120,75 @@ class _MyHomePageState extends State<MyHomePage> {
     }).catchError((e) {
       String msg =
           '[!] Uh Oh! You\'re Not Connected to PI. Please connect to PI Wifi Hotspot first.';
-      _notify(context, msg, timeout:5);
+      showInSnackBar(msg, timeout: 5);
       return;
     });
   }
 
-  Widget buildBody(BuildContext context) {
-    return new Container(
-        child: new Column(
-      children: <Widget>[
-        new Container(
-            padding: const EdgeInsets.only(top: 64.0),
-            child: new Center(
-                child: new DropdownButton<String>(
-                    hint: new Text('Select Playlist'),
-                    value: dropdownvalue,
-                    onChanged: (String newValue) {
-                      setState(() {
-                        if (newValue != null) dropdownvalue = newValue;
-                      });
-                    },
-                    items: playlists.map((String playlist) {
-                      return new DropdownMenuItem<String>(
-                          value: playlist, child: new Text(playlist));
-                    }).toList()))),
-        new Container(
-          padding: const EdgeInsets.only(top: 42.0),
-          child: new Center(
-            child: new RaisedButton(
-              child: const Text('Play'),
-              onPressed: () => _handleButton(context, ButtonActions.play),
-            ),
-          ),
-        ),
-        new Container(
-          padding: const EdgeInsets.only(top: 42.0),
-          child: new Center(
-            child: new RaisedButton(
-              child: const Text('Stop'),
-              onPressed: () => _handleButton(context, ButtonActions.stop),
-            ),
-          ),
-        ),
-        new Container(
-          padding: const EdgeInsets.only(top: 42.0),
-          child: new Center(
-            child: new RaisedButton(
-              child: const Text('Reboot'),
-              onPressed: () => _handleButton(context, ButtonActions.reboot),
-            ),
-          ),
-        ),
-        new Container(
-          padding: const EdgeInsets.only(top: 42.0),
-          child: new Center(
-            child: new RaisedButton(
-              child: const Text('Shutdown'),
-              onPressed: () => _handleButton(context, ButtonActions.shutdown),
-            ),
-          ),
-        ),
-      ],
-    ));
-  }
 
   @override
   Widget build(BuildContext context) {
     return new Scaffold(
+        key: _scaffoldKey,
         appBar: new AppBar(
           title: new Text(widget.title),
         ),
-        body: new Builder(builder: buildBody));
+        body: new Container(
+            child: new Column(
+          children: <Widget>[
+            new Container(
+                padding: const EdgeInsets.only(top: 64.0),
+                child: new Center(
+                    child: new DropdownButton<String>(
+                        hint: new Text('Select Playlist'),
+                        value: dropdownvalue,
+                        onChanged: (String newValue) {
+                          setState(() {
+                            if (newValue != null) dropdownvalue = newValue;
+                          });
+                        },
+                        items: playlists.map((String playlist) {
+                          return new DropdownMenuItem<String>(
+                              value: playlist, child: new Text(playlist));
+                        }).toList()))),
+            new Container(
+              padding: const EdgeInsets.only(top: 42.0),
+              child: new Center(
+                child: new RaisedButton(
+                  child: const Text('Play'),
+                  onPressed: () => _handleButton(ButtonActions.play),
+                ),
+              ),
+            ),
+            new Container(
+              padding: const EdgeInsets.only(top: 42.0),
+              child: new Center(
+                child: new RaisedButton(
+                  child: const Text('Stop'),
+                  onPressed: () => _handleButton(ButtonActions.stop),
+                ),
+              ),
+            ),
+            new Container(
+              padding: const EdgeInsets.only(top: 42.0),
+              child: new Center(
+                child: new RaisedButton(
+                  child: const Text('Reboot'),
+                  onPressed: () => _handleButton(ButtonActions.reboot),
+                ),
+              ),
+            ),
+            new Container(
+              padding: const EdgeInsets.only(top: 42.0),
+              child: new Center(
+                child: new RaisedButton(
+                  child: const Text('Shutdown'),
+                  onPressed: () =>
+                      _handleButton(ButtonActions.shutdown),
+                ),
+              ),
+            ),
+          ],
+        )));
   }
 }
