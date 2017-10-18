@@ -40,7 +40,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future<bool> confirmAction(String action) async {
-    return showDialog<bool>(
+    return await showDialog<bool>(
       context: _scaffoldKey.currentContext,
       child: new AlertDialog(
         content: new Text('Are you sure you want to $action?'),
@@ -59,7 +59,7 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
         ],
       ),
-    );
+    )?? false;
   }
 
   void showInSnackBar(String value, {int timeout: 3}) {
@@ -93,7 +93,7 @@ class _MyHomePageState extends State<MyHomePage> {
           break;
         case ButtonActions.reboot:
           confirmAction('reboot').then((val) {
-            if (val != null && val == true)
+            if (val)
               runAction('reboot').then((var data) {
                 if (data['status'] == 0)
                   showInSnackBar('Rebooting PI in 10 secs...');
@@ -104,7 +104,7 @@ class _MyHomePageState extends State<MyHomePage> {
           break;
         case ButtonActions.shutdown:
           confirmAction('shutdown').then((val) {
-            if (val != null && val == true)
+            if (val)
               runAction('shutdown').then((var data) {
                 if (data['status'] == 0)
                   showInSnackBar('Shuting Down PI in 10 secs...');
