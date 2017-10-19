@@ -40,37 +40,50 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   updateWifiSSID() {
-    runAction('check_ssid').then((data) {
-      if (data['status'] == 6 || data['status'] == 8) {
-        showInSnackBar(data['msg']);
-        return;
-      }
+    Socket.connect(HOST, PORT, timeout: timeout).then((socket) {
+      socket.close();
+      runAction('check_ssid').then((data) {
+        if (data['status'] == 7)
+          getSSID().then((ssid) {
+            ssid ??= null;
+            if (ssid == '') {
+              showInSnackBar(
+                  'SSID Can\'t be blank!. Please Provide a valid SSID',
+                  timeout: 5);
+              return;
+            } else {
+              var url = Uri.encodeFull(BASE_URL + 'update_ssid');
+              http.post(
+                url,
+                headers: {"Accept": "application/json"},
+                body: {"wifi_ssid": ssid},
+              ).then((response) {
+                var data = JSON.decode(response.body);
+                if (data['status'] == 0)
+                  showInSnackBar(
+                      'WiFi SSID Updated! System will reboot in 10 secs...');
+                else
+                  showInSnackBar('[!] [${data['status']}] ${data['msg']}');
+              }).catchError((e) {
+                showInSnackBar('Oops! Somethings\'s wrong. Please try again.');
+              });
+            }
+          });
+        else
+          showInSnackBar(data['msg']);
+      }).catchError((e) {
+        showInSnackBar('Oops! Somethings\'s wrong. Please try again.');
+      });
     }).catchError((e) {
-      showInSnackBar('Oops! Somethings\'s wrong. Please try again.');
-    });
-
-    getSSID().then((ssid) {
-     if(ssid != null) {
-       var url = Uri.encodeFull(BASE_URL + 'update_ssid');
-       http.post(url,
-         headers: {"Accept": "application/json"},
-         body: {"wifi_ssid": ssid},
-       ).then((response) {
-         var data = JSON.decode(response.body);
-         if (data['status'] == 0)
-           showInSnackBar(
-               'WiFi SSID Updated! System will reboot in 10 secs...');
-         else
-           showInSnackBar('[!] [${data['status']}] ${data['msg']}');
-       }).catchError((e) {
-         showInSnackBar('Oops! Somethings\'s wrong. Please try again.');
-       });
-     }
+      String msg =
+          '[!] Uh Oh! You\'re Not Connected to PI. Please connect to PI Wifi Hotspot first.';
+      showInSnackBar(msg, timeout: 5);
+      return;
     });
   }
 
   Future<String> getSSID() async {
-    String ssid;
+    String ssid = '';
     return await showDialog<String>(
       context: _scaffoldKey.currentContext,
       child: new AlertDialog(
@@ -78,16 +91,10 @@ class _MyHomePageState extends State<MyHomePage> {
         content: new TextField(
           autofocus: true,
           maxLines: 1,
-          onChanged: (value) => ssid=value,
-          onSubmitted: (value) => ssid=value,
+          onChanged: (value) => ssid = value,
+          onSubmitted: (value) => ssid = value,
         ),
         actions: <Widget>[
-          new FlatButton(
-            child: const Text('Cancel'),
-            onPressed: () {
-              Navigator.of(_scaffoldKey.currentContext).pop();
-            },
-          ),
           new FlatButton(
             child: new Text('Update'),
             onPressed: () {
@@ -100,39 +107,40 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void _handleSelection(String value) {
-    if (value == 'Update WiFi SSID'){
+    if (value == 'Update WiFi SSID') {
       updateWifiSSID();
     }
   }
 
   Future<bool> confirmAction(String action) async {
     return await showDialog<bool>(
-      context: _scaffoldKey.currentContext,
-      child: new AlertDialog(
-        content: new Text('Are you sure you want to $action?'),
-        actions: <Widget>[
-          new FlatButton(
-            child: const Text('No'),
-            onPressed: () {
-              Navigator.of(_scaffoldKey.currentContext).pop(false);
-            },
+          context: _scaffoldKey.currentContext,
+          child: new AlertDialog(
+            content: new Text('Are you sure you want to $action?'),
+            actions: <Widget>[
+              new FlatButton(
+                child: const Text('No'),
+                onPressed: () {
+                  Navigator.of(_scaffoldKey.currentContext).pop(false);
+                },
+              ),
+              new FlatButton(
+                child: new Text('Yes'),
+                onPressed: () {
+                  Navigator.of(_scaffoldKey.currentContext).pop(true);
+                },
+              ),
+            ],
           ),
-          new FlatButton(
-            child: new Text('Yes'),
-            onPressed: () {
-              Navigator.of(_scaffoldKey.currentContext).pop(true);
-            },
-          ),
-        ],
-      ),
-    )?? false;
+        ) ??
+        false;
   }
 
   void showInSnackBar(String value, {int timeout: 3}) {
     _scaffoldKey.currentState.removeCurrentSnackBar();
     _scaffoldKey.currentState.showSnackBar(new SnackBar(
-        content: new Text(value),
-        duration: new Duration(seconds: timeout),
+      content: new Text(value),
+      duration: new Duration(seconds: timeout),
     ));
   }
 
@@ -199,7 +207,6 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-
   @override
   Widget build(BuildContext context) {
     return new Scaffold(
@@ -210,10 +217,10 @@ class _MyHomePageState extends State<MyHomePage> {
             new PopupMenuButton<String>(
               onSelected: _handleSelection,
               itemBuilder: (BuildContext context) => <PopupMenuItem<String>>[
-                const PopupMenuItem<String>(
-                    value: 'Update WiFi SSID',
-                    child: const Text('Update WiFi SSID')),
-              ],
+                    const PopupMenuItem<String>(
+                        value: 'Update WiFi SSID',
+                        child: const Text('Update WiFi SSID')),
+                  ],
             ),
           ],
         ),
@@ -267,8 +274,7 @@ class _MyHomePageState extends State<MyHomePage> {
               child: new Center(
                 child: new RaisedButton(
                   child: const Text('Shutdown'),
-                  onPressed: () =>
-                      _handleButton(ButtonActions.shutdown),
+                  onPressed: () => _handleButton(ButtonActions.shutdown),
                 ),
               ),
             ),
