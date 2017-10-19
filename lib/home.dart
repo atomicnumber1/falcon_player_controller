@@ -76,7 +76,7 @@ class _MyHomePageState extends State<MyHomePage> {
       });
     }).catchError((e) {
       String msg =
-          '[!] Uh Oh! You\'re Not Connected to PI. Please connect to PI Wifi Hotspot first.';
+          '[!] Uh Oh! You\'re Not Connected to PI.\nPlease connect to PI Wifi Hotspot first.';
       showInSnackBar(msg, timeout: 5);
       return;
     });
@@ -201,7 +201,7 @@ class _MyHomePageState extends State<MyHomePage> {
       }
     }).catchError((e) {
       String msg =
-          '[!] Uh Oh! You\'re Not Connected to PI. Please connect to PI Wifi Hotspot first.';
+          '[!] Uh Oh! You\'re Not Connected to PI.\nPlease connect to PI Wifi Hotspot first.';
       showInSnackBar(msg, timeout: 5);
       return;
     });
