@@ -39,6 +39,72 @@ class _MyHomePageState extends State<MyHomePage> {
     return JSON.decode(response.body);
   }
 
+  updateWifiSSID() {
+    runAction('check_ssid').then((data) {
+      if (data['status'] == 6 || data['status'] == 8) {
+        showInSnackBar(data['msg']);
+        return;
+      }
+    }).catchError((e) {
+      showInSnackBar('Oops! Somethings\'s wrong. Please try again.');
+    });
+
+    getSSID().then((ssid) {
+     if(ssid != null) {
+       var url = Uri.encodeFull(BASE_URL + 'update_ssid');
+       http.post(url,
+         headers: {"Accept": "application/json"},
+         body: {"wifi_ssid": ssid},
+       ).then((response) {
+         var data = JSON.decode(response.body);
+         if (data['status'] == 0)
+           showInSnackBar(
+               'WiFi SSID Updated! System will reboot in 10 secs...');
+         else
+           showInSnackBar('[!] [${data['status']}] ${data['msg']}');
+       }).catchError((e) {
+         showInSnackBar('Oops! Somethings\'s wrong. Please try again.');
+       });
+     }
+    });
+  }
+
+  Future<String> getSSID() async {
+    String ssid;
+    return await showDialog<String>(
+      context: _scaffoldKey.currentContext,
+      child: new AlertDialog(
+        title: const Text('Update WiFi SSID'),
+        content: new TextField(
+          autofocus: true,
+          maxLines: 1,
+          onChanged: (value) => ssid=value,
+          onSubmitted: (value) => ssid=value,
+        ),
+        actions: <Widget>[
+          new FlatButton(
+            child: const Text('Cancel'),
+            onPressed: () {
+              Navigator.of(_scaffoldKey.currentContext).pop();
+            },
+          ),
+          new FlatButton(
+            child: new Text('Update'),
+            onPressed: () {
+              Navigator.of(_scaffoldKey.currentContext).pop(ssid);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _handleSelection(String value) {
+    if (value == 'Update WiFi SSID'){
+      updateWifiSSID();
+    }
+  }
+
   Future<bool> confirmAction(String action) async {
     return await showDialog<bool>(
       context: _scaffoldKey.currentContext,
@@ -80,7 +146,9 @@ class _MyHomePageState extends State<MyHomePage> {
             if (data['status'] == 0)
               showInSnackBar('Playing Playlist $dropdownvalue...');
             else
-              showInSnackBar('[!] [${data['status']} ${data['msg']}');
+              showInSnackBar('[!] [${data['status']}] ${data['msg']}');
+          }).catchError((e) {
+            showInSnackBar('Oops! Somethings\'s wrong. Please try again.');
           });
           break;
         case ButtonActions.stop:
@@ -88,7 +156,9 @@ class _MyHomePageState extends State<MyHomePage> {
             if (data['status'] == 0)
               showInSnackBar('Stoping Playlist $dropdownvalue...');
             else
-              showInSnackBar('[!] [${data['status']} ${data['msg']}');
+              showInSnackBar('[!] [${data['status']}] ${data['msg']}');
+          }).catchError((e) {
+            showInSnackBar('Oops! Somethings\'s wrong. Please try again.');
           });
           break;
         case ButtonActions.reboot:
@@ -98,7 +168,9 @@ class _MyHomePageState extends State<MyHomePage> {
                 if (data['status'] == 0)
                   showInSnackBar('Rebooting PI in 10 secs...');
                 else
-                  showInSnackBar('[!] [${data['status']} ${data['msg']}');
+                  showInSnackBar('[!] [${data['status']}] ${data['msg']}');
+              }).catchError((e) {
+                showInSnackBar('Oops! Somethings\'s wrong. Please try again.');
               });
           });
           break;
@@ -109,7 +181,9 @@ class _MyHomePageState extends State<MyHomePage> {
                 if (data['status'] == 0)
                   showInSnackBar('Shuting Down PI in 10 secs...');
                 else
-                  showInSnackBar('[!] [${data['status']} ${data['msg']}');
+                  showInSnackBar('[!] [${data['status']}] ${data['msg']}');
+              }).catchError((e) {
+                showInSnackBar('Oops! Somethings\'s wrong. Please try again.');
               });
           });
           break;
@@ -132,6 +206,16 @@ class _MyHomePageState extends State<MyHomePage> {
         key: _scaffoldKey,
         appBar: new AppBar(
           title: new Text(widget.title),
+          actions: <Widget>[
+            new PopupMenuButton<String>(
+              onSelected: _handleSelection,
+              itemBuilder: (BuildContext context) => <PopupMenuItem<String>>[
+                const PopupMenuItem<String>(
+                    value: 'Update WiFi SSID',
+                    child: const Text('Update WiFi SSID')),
+              ],
+            ),
+          ],
         ),
         body: new SingleChildScrollView(
             child: new Column(
